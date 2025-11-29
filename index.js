@@ -3,7 +3,7 @@ const mineflayer = require("mineflayer");
 function createBot() {
   const bot = mineflayer.createBot({
     username: "AFKBot",
-    auth: "offline", // ← CHANGE THIS IF YOU USE MICROSOFT
+    auth: "mojang", // ← CHANGE THIS IF YOU USE MICROSOFT
     host: "Flins_comehome.aternos.me",
     port: 38656,
     version: "1.12.1"
