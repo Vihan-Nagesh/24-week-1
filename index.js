@@ -1,67 +1,48 @@
-const mineflayer = require('mineflayer');
-const config = require('./settings.json');
-const express = require('express');
-
-const app = express();
-app.get('/', (req, res) => res.send('Bot is online'));
-app.listen(8000, () => console.log('Webserver started'));
+const mineflayer = require("mineflayer");
 
 function createBot() {
-    const bot = mineflayer.createBot({
-        username: config['bot-account'].username,
-        password: config['bot-account'].password,
-        auth: config['bot-account'].type,
-        host: config.server.ip,
-        port: config.server.port,
-        version: config.server.version
-    });
+  const bot = mineflayer.createBot({
+    host: "Flins_comehome.aternos.me",
+    port: 38656,
+    username: "AFKBot",
+  });
 
-    // AUTO REGISTER
-    function autoRegister() {
-        const pass = config.utils['auto-auth'].password;
-        bot.chat(`/register ${pass} ${pass}`);
+  bot.on("spawn", () => {
+    console.log("Bot joined! Starting human‑like AFK.");
+
+    function randomAction() {
+      if (!bot.entity) return;
+
+      const actions = [
+        () => bot.look(bot.entity.yaw + (Math.random() - 0.5) * 0.3, bot.entity.pitch, true),
+        () => bot.setControlState("jump", true),
+        () => bot.setControlState("jump", false),
+        () => bot.setControlState("sneak", Math.random() < 0.5),
+        () => bot.setControlState("forward", Math.random() < 0.4),
+        () => bot.setControlState("back", Math.random() < 0.1),
+        () => bot.setControlState("left", Math.random() < 0.1),
+        () => bot.setControlState("right", Math.random() < 0.1),
+      ];
+
+      // pick random action
+      const action = actions[Math.floor(Math.random() * actions.length)];
+      action();
+
+      // random wait between 5 and 25 seconds
+      const next = Math.random() * 20000 + 5000;
+      setTimeout(randomAction, next);
     }
 
-    // AUTO LOGIN
-    function autoLogin() {
-        const pass = config.utils['auto-auth'].password;
-        bot.chat(`/login ${pass}`);
-    }
+    randomAction();
+  });
 
-    bot.once('spawn', () => {
-        console.log("[BOT] Spawned.");
+  bot.on("end", () => {
+    const delay = Math.floor(Math.random() * 60000) + 10000; // 10–70 seconds
+    console.log(`Bot disconnected, reconnecting in ${delay / 1000}s...`);
+    setTimeout(createBot, delay);
+  });
 
-        // AUTH
-        if (config.utils['auto-auth'].enabled) {
-            setTimeout(autoRegister, 500);
-            setTimeout(autoLogin, 1500);
-        }
-
-        // TELEPORT BOT INTO POSITION (no pathfinder)
-        const pos = config.position;
-        if (pos.enabled) {
-            console.log(`[BOT] Setting position to ${pos.x}, ${pos.y}, ${pos.z}`);
-            bot.entity.position.set(pos.x + 0.5, pos.y, pos.z + 0.5);
-        }
-
-        // ANTI AFK
-        if (config.utils['anti-afk'].enabled) {
-            setInterval(() => {
-                bot.setControlState("jump", true);
-                setTimeout(() => bot.setControlState("jump", false), 300);
-                bot.look(bot.entity.yaw + 0.05, 0, true);
-            }, 4000);
-        }
-    });
-
-    bot.on('kicked', reason => console.log("[KICKED]", reason));
-    bot.on('error', err => console.log("[ERROR]", err));
-
-    // AUTO RECONNECT
-    bot.on('end', () => {
-        console.log("[BOT] Lost connection. Reconnecting...");
-        setTimeout(createBot, config.utils['auto-recconect-delay']);
-    });
+  bot.on("error", (err) => console.log("ERROR:", err));
 }
 
 createBot();
